@@ -1,9 +1,13 @@
 package com.e_commerce.order_service.controller;
 
 import com.e_commerce.order_service.dto.AddToCartRequest;
+import com.e_commerce.order_service.dto.CartResponse;
 import com.e_commerce.order_service.dto.OrderResponse;
 import com.e_commerce.order_service.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,20 +20,26 @@ public class OrderController {
     private final OrderService orderService;
 
 
-    @PostMapping("/cart")
-    public OrderResponse addToCart(@RequestBody AddToCartRequest request) {
-        return orderService.addToCart(request);
+    @PostMapping("/cart/add")
+    public ResponseEntity<CartResponse> addToCart(@Valid @RequestBody AddToCartRequest request)
+    {
+
+//        Long userId = ((CustomUserDetails) authentication.getPrincipal()).getUserId();
+        Long userId = 1L;
+        CartResponse response = orderService.addToCart(userId, request);
+        return ResponseEntity.ok(response);
     }
 
 
+
     @PostMapping("/{orderId}/checkout")
-    public OrderResponse placeOrder(@PathVariable Long orderId) {
-        return orderService.placeOrder(orderId);
+    public ResponseEntity<OrderResponse> placeOrder(@PathVariable Long orderId) {
+        return ResponseEntity.ok(orderService.placeOrder(orderId));
     }
 
 
     @GetMapping
-    public List<OrderResponse> getAllOrders() {
-        return orderService.getAllOrders();
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        return  ResponseEntity.ok(orderService.getAllOrders());
     }
 }

@@ -12,5 +12,4 @@ public class OrderResponse {
     private Long id;
     private String orderNumber;
     private BigDecimal price;
-    private Integer quantity;
 }
