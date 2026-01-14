@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: product-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/productServiceDb
+
+  cloud:
+    config:
+      import-check:
+          enabled: false
+
+server:
+  port: 8082

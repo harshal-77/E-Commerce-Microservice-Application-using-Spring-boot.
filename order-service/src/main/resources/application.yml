@@ -11,6 +11,11 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+  cloud:
+    config:
+      import-check:
+        enabled: false
+
 
 server:
   port: 8081
