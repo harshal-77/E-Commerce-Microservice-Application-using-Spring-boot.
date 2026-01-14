@@ -24,8 +24,5 @@ public class CreateProductRequest {
     @DecimalMin("0.0")
     private BigDecimal price;
 
-    @NotNull
-    @Min(0)
-    private Integer stock;
 }
 

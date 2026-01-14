@@ -42,7 +42,6 @@ public class ProductServiceImpl implements ProductService {
         );
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
         product.setActive(true);
 
         return mapToResponse(productRepository.save(product));
@@ -75,7 +74,6 @@ public class ProductServiceImpl implements ProductService {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
 
         Product updatedProduct = productRepository.save(product);
         return mapToResponse(updatedProduct);
@@ -100,7 +98,6 @@ public class ProductServiceImpl implements ProductService {
                 product.getCategory(),
                 product.getSlug(),
                 product.getPrice(),
-                product.getStock(),
                 product.getActive()
         );
     }

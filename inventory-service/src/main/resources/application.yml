@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: inventory-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/inventoryServiceDb
+
+  cloud:
+    config:
+      import-check:
+        enabled: false
+
+server:
+  port: 8083
