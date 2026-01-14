@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 public class AddToCartRequest {
 
     @NotNull
-    private Long productId;
+    private String productId;
 
     @NotNull
     @Min(1)

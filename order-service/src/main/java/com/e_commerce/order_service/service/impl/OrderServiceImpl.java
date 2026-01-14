@@ -23,53 +23,39 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
 
 
     @Override
-    @Transactional
     public CartResponse addToCart(Long userId, AddToCartRequest request) {
 
-        // 1️⃣ Find ACTIVE cart for the user, or create a new one
         Cart cart = cartRepository.findByUserIdAndStatus(userId, CartStatus.ACTIVE)
                 .orElseGet(() -> createNewCart(userId));
 
-        // 2️⃣ Check if the cart already has this product
         Optional<CartItem> optionalItem = cart.getCartItems().stream()
                 .filter(i -> i.getProductId().equals(request.getProductId()))
                 .findFirst();
 
         if (optionalItem.isPresent()) {
-            // 3️⃣ Update existing CartItem
             CartItem item = optionalItem.get();
             item.setQuantity(item.getQuantity() + request.getQuantity());
             item.setPrice(request.getProductPrice());
         } else {
-            // 4️⃣ Create new CartItem
             CartItem item = new CartItem();
             item.setProductId(request.getProductId());
             item.setQuantity(request.getQuantity());
             item.setPrice(request.getProductPrice());
 
-            // 5️⃣ Maintain both sides
             cart.addItem(item);
         }
 
-        // 6️⃣ Save the cart (cascades to items)
-        Cart savedCart = cartRepository.saveAndFlush(cart);
-
-        // 7️⃣ Ensure items are loaded (optional but safe)
-        savedCart.getCartItems().size();
-
-        // 8️⃣ Map to DTO
+        Cart savedCart = cartRepository.save(cart);
         return mapToCartResponse(savedCart);
     }
-
-
 
 
     @Override
@@ -82,29 +68,36 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cart is not active");
         }
 
+        if (cart.getCartItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty");
+        }
+
         Order order = new Order();
         order.setOrderNumber(generateOrderNumber());
         order.setUserId(cart.getUserId());
-        order.setPrice(calculateCartTotal(cart));
+        order.setTotalAmount(calculateCartTotal(cart));
         order.setStatus(OrderStatus.CREATED);
+
+        List<OrderItem> orderItems = cart.getCartItems().stream()
+                .map(cartItem -> {
+                    OrderItem orderItem = new OrderItem();
+                    orderItem.setProductId(cartItem.getProductId());
+                    orderItem.setQuantity(cartItem.getQuantity());
+                    orderItem.setPrice(cartItem.getPrice());
+                    orderItem.setOrder(order);
+                    return orderItem;
+                })
+                .toList();
+
+        order.setOrderItems(orderItems);
 
         Order savedOrder = orderRepository.save(order);
 
         cart.setStatus(CartStatus.CHECKED_OUT);
         cartRepository.save(cart);
 
-        return mapToResponse(savedOrder);
+        return mapToOrderResponse(savedOrder);
     }
-
-    private BigDecimal calculateCartTotal(Cart cart) {
-        return cart.getCartItems().stream()
-                .map(item -> item.getPrice()
-                        .multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-
-
 
 
     @Override
@@ -117,25 +110,20 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Order cannot be placed");
         }
 
-        // 1. Payment validation (mock)
+        // Mock payment
         boolean paymentSuccess = true;
-
         if (!paymentSuccess) {
             throw new RuntimeException("Payment failed");
         }
 
-        // 2. Inventory check (mock)
+        // Mock inventory
         boolean inventoryAvailable = true;
-
         if (!inventoryAvailable) {
             throw new RuntimeException("Insufficient inventory");
         }
 
-        // 3. Update order status
         order.setStatus(OrderStatus.PLACED);
-        Order savedOrder = orderRepository.save(order);
-
-        return mapToResponse(savedOrder);
+        return mapToOrderResponse(orderRepository.save(order));
     }
 
 
@@ -143,58 +131,55 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponse> getAllOrders() {
         return orderRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::mapToOrderResponse)
                 .toList();
+    }
+
+
+    private BigDecimal calculateCartTotal(Cart cart) {
+        return cart.getCartItems().stream()
+                .map(item -> item.getPrice()
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private String generateOrderNumber() {
         return "ORD-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    private OrderResponse mapToResponse(Order order) {
-        return new OrderResponse(
-                order.getId(),
-                order.getOrderNumber(),
-                order.getPrice()
-        );
-    }
-
     private Cart createNewCart(Long userId) {
-
         Cart cart = new Cart();
         cart.setUserId(userId);
         cart.setStatus(CartStatus.ACTIVE);
-
         return cartRepository.save(cart);
+    }
+
+    private OrderResponse mapToOrderResponse(Order order) {
+        return new OrderResponse(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getTotalAmount()
+        );
     }
 
     private CartResponse mapToCartResponse(Cart cart) {
 
         List<CartItemResponse> items = cart.getCartItems().stream()
                 .map(item -> {
-                    BigDecimal price = item.getPrice() != null
-                            ? item.getPrice()
-                            : BigDecimal.ZERO;
-
-                    int quantity = item.getQuantity() != null
-                            ? item.getQuantity()
-                            : 0;
-
-                    BigDecimal totalPrice =
-                            price.multiply(BigDecimal.valueOf(quantity));
+                    BigDecimal price = item.getPrice() != null ? item.getPrice() : BigDecimal.ZERO;
+                    int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
 
                     return new CartItemResponse(
                             item.getProductId(),
                             quantity,
                             price,
-                            totalPrice
+                            price.multiply(BigDecimal.valueOf(quantity))
                     );
                 })
                 .toList();
 
         BigDecimal totalAmount = items.stream()
                 .map(CartItemResponse::getTotalPrice)
-                .filter(Objects::nonNull)          // IMPORTANT
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new CartResponse(
@@ -205,5 +190,4 @@ public class OrderServiceImpl implements OrderService {
                 items
         );
     }
-
 }

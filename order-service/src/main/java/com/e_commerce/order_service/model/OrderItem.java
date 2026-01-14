@@ -1,33 +1,26 @@
 package com.e_commerce.order_service.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Entity
+@Table(name = "order_items")
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name="cart_items")
-public class CartItem {
+public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String productId;
-
     private Integer quantity;
-
     private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cart_id", nullable = false)
-    private Cart cart;
-
+    @JoinColumn(name = "order_id")
+    private Order order;
 }
