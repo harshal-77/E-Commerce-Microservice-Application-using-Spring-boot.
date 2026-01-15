@@ -5,6 +5,17 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017/inventoryServiceDb
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: product-processor-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.e_commerce.inventory_service.model.ProductCreatedEvent
+        spring.json.trusted.packages: "*"
+
   cloud:
     config:
       enabled: false
@@ -18,3 +29,9 @@ eureka:
 
 server:
   port: 8083
+
+
+kafka:
+  topic:
+    name: Product-event
+

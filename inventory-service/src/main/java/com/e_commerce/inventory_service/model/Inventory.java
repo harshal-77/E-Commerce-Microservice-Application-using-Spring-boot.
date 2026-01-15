@@ -1,6 +1,7 @@
 package com.e_commerce.inventory_service.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Document(collection = "inventory")
 public class Inventory {
 
@@ -24,7 +26,8 @@ public class Inventory {
     private LocalDateTime lastUpdated;
 
     public void updateQuantity(int quantityChange) {
-        if (this.quantityAvailable == null) this.quantityAvailable = 0;
+        if (this.quantityAvailable == null)
+            this.quantityAvailable = 0;
         this.quantityAvailable += quantityChange;
         this.lastUpdated = LocalDateTime.now();
     }

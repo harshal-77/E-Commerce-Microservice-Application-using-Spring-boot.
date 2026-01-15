@@ -1,12 +1,15 @@
 package com.e_commerce.product_service.service.impl;
 
 import com.e_commerce.product_service.dto.CreateProductRequest;
+import com.e_commerce.product_service.dto.ProductCreatedEvent;
 import com.e_commerce.product_service.dto.ProductResponse;
 import com.e_commerce.product_service.model.Product;
 import com.e_commerce.product_service.repository.ProductRepository;
 import com.e_commerce.product_service.service.ProductService;
 import com.e_commerce.product_service.utility.ProductCodeGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +20,10 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final ProductCodeGenerator productCodeGenerator;
+    private final KafkaTemplate<String,ProductCreatedEvent> kafkaTemplate;
+
+    @Value("${kafka.topic.name}")
+    private String topicName;
 
     @Override
     public ProductResponse createProduct(CreateProductRequest request) {
@@ -44,7 +51,18 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(request.getPrice());
         product.setActive(true);
 
-        return mapToResponse(productRepository.save(product));
+        Product savedProduct = productRepository.save(product);
+        try {
+            kafkaTemplate.send(
+                    topicName,
+                    new ProductCreatedEvent(savedProduct.getId())
+            );
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return mapToResponse(savedProduct);
     }
 
     @Override
