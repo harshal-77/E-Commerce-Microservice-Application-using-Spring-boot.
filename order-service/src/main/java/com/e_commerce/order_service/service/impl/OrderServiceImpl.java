@@ -7,7 +7,6 @@ import com.e_commerce.order_service.dto.OrderResponse;
 import com.e_commerce.order_service.model.*;
 import com.e_commerce.order_service.model.enums.CartStatus;
 import com.e_commerce.order_service.model.enums.OrderStatus;
-import com.e_commerce.order_service.repository.CartItemRepository;
 import com.e_commerce.order_service.repository.CartRepository;
 import com.e_commerce.order_service.repository.OrderRepository;
 import com.e_commerce.order_service.service.OrderService;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
