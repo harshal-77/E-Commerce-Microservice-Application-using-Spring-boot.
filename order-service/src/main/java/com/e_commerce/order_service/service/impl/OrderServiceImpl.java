@@ -9,6 +9,7 @@ import com.e_commerce.order_service.model.enums.CartStatus;
 import com.e_commerce.order_service.model.enums.OrderStatus;
 import com.e_commerce.order_service.repository.CartRepository;
 import com.e_commerce.order_service.repository.OrderRepository;
+import com.e_commerce.order_service.service.InventoryClient;
 import com.e_commerce.order_service.service.OrderService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,8 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
+    private final InventoryClient inventoryClient; // 👈 ADD THIS
+
 
 
     @Override
@@ -104,21 +107,18 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (order.getStatus() != OrderStatus.CREATED) {
-            throw new RuntimeException("Order cannot be placed");
-        }
+        order.getOrderItems().forEach(item -> {
+            boolean available = inventoryClient.checkStock(
+                    item.getProductId(),
+                    item.getQuantity()
+            );
 
-        // Mock payment
-        boolean paymentSuccess = true;
-        if (!paymentSuccess) {
-            throw new RuntimeException("Payment failed");
-        }
-
-        // Mock inventory
-        boolean inventoryAvailable = true;
-        if (!inventoryAvailable) {
-            throw new RuntimeException("Insufficient inventory");
-        }
+            if (!available) {
+                throw new RuntimeException(
+                        "Insufficient stock for product " + item.getProductId()
+                );
+            }
+        });
 
         order.setStatus(OrderStatus.PLACED);
         return mapToOrderResponse(orderRepository.save(order));
